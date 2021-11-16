@@ -6,7 +6,6 @@ require('dotenv').config()
 const http = require('http');
 const express = require("express")
 const app = express()
-const bodyParser = require('body-parser')
 const path = require('path')
 const passport = require('passport');
 const expressSession = require('express-session')({
@@ -17,19 +16,20 @@ const expressSession = require('express-session')({
 const rootDir = require('./util/path');
 
 (async () => {
-  app.use(passport.initialize());
-  app.use(passport.session());
+
 
   app.use(cors())
+  app.use(express.urlencoded({ extended: true }));
 
-  app.use(bodyParser.urlencoded({ extended: true }));
   app.use(express.static(path.join(rootDir, 'public')))
 
   app.set('view engine', 'pug')
   app.set('views', 'views')
+  app.use(express.json());
 
-  app.use(bodyParser.json());
   app.use(expressSession);
+  app.use(passport.initialize());
+  app.use(passport.session());
 
   app.use((req, res, next) => {
       res.setHeader('Access-Control-Allow-Origin', '*');
@@ -42,8 +42,8 @@ const rootDir = require('./util/path');
   //connect to mongodb
   mongoose
     .connect(process.env.database)
-    .then(() => console.log("Connected to MongoDB..."))
-    .catch(err => console.error("Could not connect to MongoDB..."));
+    .then(() => console.log("Conectado a MongoDB..."))
+    .catch(err => console.error("No se pudo conectar a MongoDB..."));
 
 
   app.use(express.json());
