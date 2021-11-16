@@ -1,5 +1,5 @@
 const { User } = require("../models/user.model");
-const {HandCashConnect} = require('@handcash/handcash-connect');
+const {HandCashConnect} = require('@t0m4s/handcash-connect');
 require('dotenv').config()
 const handCashConnect = new HandCashConnect(process.env.appId);
 

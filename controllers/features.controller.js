@@ -1,7 +1,7 @@
 const { User } = require("../models/user.model");
-const { PrivateKey, PublicKey } = require('bsv');
-const ECIES = require('bsv/ecies');
-const {HandCashConnect} = require('@handcash/handcash-connect');
+//const bsv = require('bsv');
+const { PrivKey, PubKey, Ecies, KeyPair } = require('bsv');
+const {HandCashConnect} = require('@t0m4s/handcash-connect');
 require('dotenv').config()
 const handCashConnect = new HandCashConnect(process.env.appId);
 
@@ -165,30 +165,31 @@ module.exports.postEncrypt = async (req, res, next) => {
   const user = await User.findById(req.user._id);
   const account = await handCashConnect.getAccountFromAuthToken(user.connectAuthToken);
 
-  const { publicKey, privateKey } = await account.profile.getEncryptionKeypair();
-  console.log(publicKey);
+  const { pubkey, privkey } = await account.profile.getEncryptionKeypair();
+console.log("Claves: ",pubkey, privkey);
+    const ecPrivKey = PrivKey.fromString(privkey);
+    const ecPubKey = PubKey.fromString(pubkey);
+    const plainText = req.body.encryptText;
+    const claves = KeyPair.fromPrivKey(ecPrivKey);
 
-  const ecPrivateKey = PrivateKey.fromWIF(privateKey);
-  const ecPublicKey = PublicKey.fromString(publicKey);
-  const plainText = req.body.encryptText;
+    const encryptedBuffer = new Ecies.electrumEncrypt(Buffer.from(plainText,"utf8"),ecPubKey, claves);
+    console.log(encryptedBuffer.toString('base64'));
 
-  const encryptedBuffer = ECIES().publicKey(ecPublicKey).encrypt(plainText);
-  console.log(encryptedBuffer.toString('base64'));
+    const decryptedBuffer = new Ecies.electrumDecrypt(encryptedBuffer, ecPrivKey);
+    console.log(decryptedBuffer.toString('utf8'));
 
-  const decryptedBuffer = ECIES().privateKey(ecPrivateKey).decrypt(encryptedBuffer);
-  console.log(decryptedBuffer.toString('utf8'));
+    console.assert(decryptedBuffer.toString('utf8') == plainText);
 
-  console.assert(decryptedBuffer.toString('utf8') == plainText);
-
-  // display public profile with the recent transaction
-  res.render('encryption', {
-    encryptionDetails: {
-      ecPrivateKey: ecPrivateKey,
-      ecPublicKey: ecPublicKey,
-      plainText: plainText,
-      encryptedBuffer: encryptedBuffer.toString('hex'),
-      decryptedBuffer: decryptedBuffer
-    },
-    path: '/encryption'
-  })
+    // display public profile with the recent transaction
+    res.render('encryption', {
+      encryptionDetails: {
+        privkey: privkey,
+        pubkey: pubkey,
+        plainText: plainText,
+        encryptedBuffer: encryptedBuffer.toString('hex'),
+        decryptedBuffer: decryptedBuffer
+      },
+      path: '/encryption'
+    })
+  
 }
